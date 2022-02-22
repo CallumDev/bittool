@@ -7,9 +7,27 @@
 #include "imgui_impl_opengl3_loader.h"
 #include "cousine.cpp"
 
+void IntegerTab();
+void FloatTab();
+
+union d2l {
+    double d;
+    uint64_t l;
+};
+
+union f2i {
+    float f;
+    uint32_t i;
+};
+
+d2l doubleedit;
+f2i floatedit;
+
 // Main code
 int main(int, char**)
 {
+    doubleedit.d = 1.0;
+    floatedit.f = 1.0f;
     // Setup SDL
     // (Some versions of SDL before <2.0.10 appears to have performance/stalling issues on a minority of Windows systems,
     // depending on whether SDL_INIT_GAMECONTROLLER is enabled or disabled.. updating to latest version of SDL is recommended!)
@@ -83,18 +101,12 @@ int main(int, char**)
         "Font Size: Large",
         "Font Size: X-Large"
     };
-    // Our state
-    bool show_demo_window = true;
-    bool show_another_window = false;
+
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // Main loop
     bool done = false;
 
-    uint64_t num64 = 0x0;
-    int bitSizeSelected = 0;
-    int bitSizeActive = 0;
-    int bitCount = 64;
     int fontSize = 0;
 
     int renderCount = 5;
@@ -151,163 +163,16 @@ int main(int, char**)
                 }
                 ImGui::EndMenuBar();
             }
-            const char* bitSizes[] = {
-                "64 bits",
-                "32 bits",
-                "16 bits",
-                "8 bits"
-            };
-            ImGui::Combo("##bitSize", &bitSizeSelected, bitSizes, 4, 4);
-            if(bitSizeSelected != bitSizeActive) {
-                bitSizeActive = bitSizeSelected;
-                switch(bitSizeSelected) {
-                    default:
-                    case 0:
-                        bitCount = 64;
-                        break;
-                    case 1:
-                        bitCount = 32;
-                        break;
-                    case 2:
-                        bitCount = 16;
-                        break;
-                    case 3:
-                        bitCount = 8;
-                        break;
-                }
+            ImGui::BeginTabBar("##tabs");
+            if(ImGui::BeginTabItem("Integer")) {
+                IntegerTab();
+                ImGui::EndTabItem();
             }
-            const char* formats[] = {
-                "%016lX",
-                "%08X",
-                "%04X",
-                "%02X"
-            };
-            ImGui::InputScalar("Number", ImGuiDataType_U64, &num64, NULL, NULL, formats[bitSizeActive], ImGuiInputTextFlags_CharsHexadecimal);
-
-            switch(bitSizeActive) {
-                default:
-                case 0:
-                    ImGui::Text("Decimal: %llu", num64);
-                    ImGui::Text("Signed: %lld", (int64_t)num64);
-                    break;
-                case 1:
-                    num64 &= 0xFFFFFFFF;
-                    ImGui::Text("Decimal: %u", (uint32_t)num64);
-                    ImGui::Text("Signed: %d", (int32_t)num64);
-                    break;
-                case 2:
-                    num64 &= 0xFFFF;
-                    ImGui::Text("Decimal: %hu", (uint16_t)num64);
-                    ImGui::Text("Signed: %hd", (int16_t)num64);
-                    break;
-                case 3:
-                    num64 &= 0xFF;
-                    ImGui::Text("Decimal: %hhu", (uint8_t)num64);
-                    ImGui::Text("Signed: %hhd", (int8_t)num64);
-                    break;    
+            if(ImGui::BeginTabItem("Float")) {
+                FloatTab();
+                ImGui::EndTabItem();
             }
-            
-
-            int t1Offset = 0;
-            if(bitCount > 32) {
-                t1Offset = 32;
-            }
-            #define SET_COLOR(index) { \
-                int colorIndex = (index / 4) % 2; \
-                int c = colorIndex ? 0xFF3D3D3D : 0xFF616161; \
-                ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, c, ImGui::TableGetColumnIndex()); \
-            }
-            
-            if(ImGui::BeginTable("table1", bitCount - t1Offset)) {
-                for(int i = (bitCount - 1); i >= t1Offset; i--) {
-                    ImGui::TableNextColumn();
-                    SET_COLOR(i);
-                    ImGui::Text("%d", i);
-                }
-                for(int i = (bitCount - 1); i >= t1Offset; i--) {
-                    ImGui::TableNextColumn();
-                    SET_COLOR(i);
-                    ImGui::PushID(i);
-                    bool displayVal = ((num64 & (1ULL << i)) != 0);
-                    bool isSet = displayVal;
-                    if(ImGui::Checkbox("##box", &displayVal)) {
-                        if(isSet) num64 &= ~(1ULL << i);
-                        else num64 |= (1ULL << i);
-                    }
-                    ImGui::PopID();
-                }
-                for(int i = (bitCount - 1); i >= t1Offset; i--) {
-                    ImGui::TableNextColumn();
-                    SET_COLOR(i);
-                    if((i + 1) % 4 == 0 && i) {
-                        uint64_t mask = (1ULL << i) |
-                                   (1ULL << (i - 1)) |
-                                   (1ULL << (i - 2)) |
-                                   (1ULL << (i - 3));
-                        uint64_t n = (num64 & mask) >> (i - 3);
-                        ImGui::Text("%x",n);
-                    }
-                }
-                ImGui::EndTable();
-            }
-
-            if(bitCount > 32 && ImGui::BeginTable("table2", 32)) {
-                for(int i = (32 - 1); i >= 0; i--) {
-                    ImGui::TableNextColumn();
-                    SET_COLOR(i);
-                    ImGui::Text("%d", i);
-                }
-                for(int i = (32 - 1); i >= 0; i--) {
-                    ImGui::TableNextColumn();
-                    SET_COLOR(i);
-                    ImGui::PushID(i);
-                    bool displayVal = ((num64 & (1ULL << i)) != 0);
-                    bool isSet = displayVal;
-                    if(ImGui::Checkbox("##box", &displayVal)) {
-                        if(isSet) num64 &= ~(1ULL << i);
-                        else num64 |= (1ULL << i);
-                    }
-                    ImGui::PopID();
-                }
-                for(int i = (32 - 1); i >= 0; i--) {
-                    ImGui::TableNextColumn();
-                    SET_COLOR(i);
-                    if((i + 1) % 4 == 0 && i) {
-                        uint64_t mask = (1ULL << i) |
-                                   (1ULL << (i - 1)) |
-                                   (1ULL << (i - 2)) |
-                                   (1ULL << (i - 3));
-                        uint64_t n = (num64 & mask) >> (i - 3);
-                        ImGui::Text("%x",n);
-                    }
-                }
-                ImGui::EndTable();
-            }
-            char buf[128];
-            const char* formatsSigned[] = {
-                "%lld",
-                "%d",
-                "%hd",
-                "%hhd"
-            };
-            if(ImGui::Button("Copy Hex")) {
-                int w = snprintf(buf, 128, "%llx", num64);
-                buf[w] = 0;
-                SDL_SetClipboardText(buf);
-            }
-            ImGui::SameLine();
-            if(ImGui::Button("Copy Signed")) {
-                int w = snprintf(buf, 128, formatsSigned[bitSizeActive], num64);
-                buf[w] = 0;
-                SDL_SetClipboardText(buf);
-            }
-            ImGui::SameLine();
-            if(ImGui::Button("Copy Unsigned")) {
-                int w = snprintf(buf, 128, "%llu", num64);
-                buf[w] = 0;
-                SDL_SetClipboardText(buf);
-            }
-            ImGui::SameLine();
+            ImGui::EndTabBar();
 
             ImGui::End();
         }
@@ -334,3 +199,204 @@ int main(int, char**)
     return 0;
 }
 
+
+void FloatTab()
+{
+    ImGui::Text("Double Precision");
+    ImGui::InputScalar("uint64_t", ImGuiDataType_U64, &doubleedit.l, NULL, NULL, "%lX", ImGuiInputTextFlags_CharsHexadecimal);
+    ImGui::InputScalar("double", ImGuiDataType_Double, &doubleedit.d, NULL, NULL);
+    ImGui::Separator();
+    ImGui::Text("Single Precision");
+    ImGui::InputScalar("uint32_t", ImGuiDataType_U32, &floatedit.i, NULL, NULL, "%x", ImGuiInputTextFlags_CharsHexadecimal);
+    ImGui::InputScalar("float", ImGuiDataType_Float, &floatedit.f, NULL, NULL);
+}
+
+static uint64_t num64 = 0x0;
+static int bitSizeSelected = 0;
+static int bitSizeActive = 0;
+static int bitCount = 64;
+
+void BitTable(int tableIndex, int startBit, int endBit)
+{
+    ImGui::PushID(tableIndex);
+    #define SET_COLOR(index) { \
+        int colorIndex = (index / 4) % 2; \
+        int c = colorIndex ? 0xFF3D3D3D : 0xFF616161; \
+        ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, c, ImGui::TableGetColumnIndex()); \
+    }
+    
+    if(ImGui::BeginTable("table", startBit - endBit + 1, ImGuiTableFlags_BordersOuter)) {
+        for(int i = startBit; i >= endBit; i--) {
+            ImGui::TableNextColumn();
+            SET_COLOR(i);
+            ImGui::Text("%d", i);
+        }
+        for(int i = startBit; i >= endBit; i--) {
+            ImGui::TableNextColumn();
+            SET_COLOR(i);
+            ImGui::PushID(i);
+            bool displayVal = ((num64 & (1ULL << i)) != 0);
+            bool isSet = displayVal;
+            if(ImGui::Checkbox("##box", &displayVal)) {
+                if(isSet) num64 &= ~(1ULL << i);
+                else num64 |= (1ULL << i);
+            }
+            ImGui::PopID();
+        }
+        for(int i = startBit; i >= endBit; i--) {
+            ImGui::TableNextColumn();
+            SET_COLOR(i);
+            if((i + 1) % 4 == 0 && i) {
+                uint64_t mask = (1ULL << i) |
+                            (1ULL << (i - 1)) |
+                            (1ULL << (i - 2)) |
+                            (1ULL << (i - 3));
+                uint64_t n = (num64 & mask) >> (i - 3);
+                ImGui::Text("%x",n);
+            }
+        }
+        ImGui::EndTable();
+    }
+    ImGui::PopID();
+}
+
+void IntegerTab()
+{
+    const char* bitSizes[] = {
+        "64 bits",
+        "32 bits",
+        "16 bits",
+        "8 bits"
+    };
+    ImGui::Combo("##bitSize", &bitSizeSelected, bitSizes, 4, 4);
+    if(bitSizeSelected != bitSizeActive) {
+        bitSizeActive = bitSizeSelected;
+        switch(bitSizeSelected) {
+            default:
+            case 0:
+                bitCount = 64;
+                break;
+            case 1:
+                bitCount = 32;
+                break;
+            case 2:
+                bitCount = 16;
+                break;
+            case 3:
+                bitCount = 8;
+                break;
+        }
+    }
+    const char* formats[] = {
+        "%016lX",
+        "%08X",
+        "%04X",
+        "%02X"
+    };
+    ImGui::InputScalar("Number", ImGuiDataType_U64, &num64, NULL, NULL, formats[bitSizeActive], ImGuiInputTextFlags_CharsHexadecimal);
+
+    float threshold32 = ImGui::CalcTextSize("00").x * 44;
+    float threshold16 = ImGui::CalcTextSize("00").x * 22;
+    float windowWidth = ImGui::GetWindowWidth();
+    float lineHeight = ImGui::GetTextLineHeightWithSpacing();
+    switch(bitSizeActive) {
+        default:
+        case 0:
+            ImGui::Text("Decimal: %llu", num64);
+            ImGui::Text("Signed: %lld", (int64_t)num64);
+        break;
+        case 1:
+            num64 &= 0xFFFFFFFF;
+            ImGui::Text("Decimal: %u", (uint32_t)num64);
+            ImGui::Text("Signed: %d", (int32_t)num64);
+            break;
+        case 2:
+            num64 &= 0xFFFF;
+            ImGui::Text("Decimal: %hu", (uint16_t)num64);
+            ImGui::Text("Signed: %hd", (int16_t)num64);
+            break;
+        case 3:
+            num64 &= 0xFF;
+            ImGui::Text("Decimal: %hhu", (uint8_t)num64);
+            ImGui::Text("Signed: %hhd", (int8_t)num64);
+            break;
+    }
+
+    float padding = ImGui::GetStyle().FramePadding.x;
+    float height = ImGui::GetWindowHeight();
+    ImGui::BeginChild("##bits", ImVec2(ImGui::GetWindowWidth() - padding * 6, -(lineHeight * 1.5)), true);
+    switch(bitSizeActive) {
+        default:
+        case 0: //64
+            if(windowWidth < threshold16) {
+                BitTable(0, 63, 56);
+                BitTable(1, 55, 48);
+                BitTable(2, 47, 40);
+                BitTable(3, 39, 32);
+                BitTable(4, 31, 24);
+                BitTable(5, 23, 16);
+                BitTable(6, 15, 8);
+                BitTable(7, 7, 0);
+            } else if (windowWidth < threshold32) {
+                BitTable(8, 63, 48);
+                BitTable(9, 47, 32);
+                BitTable(10, 31, 16);
+                BitTable(11, 15, 0);
+            } else {
+                BitTable(12, 63, 32);
+                BitTable(13, 31, 0);
+            }
+            break;
+        case 1: //32
+            if(windowWidth < threshold16) {
+                BitTable(14, 31, 24);
+                BitTable(15, 23, 16);
+                BitTable(16, 15, 8);
+                BitTable(17, 7, 0);
+            } else if (windowWidth < threshold32) {
+                BitTable(18, 31, 16);
+                BitTable(19, 15, 0);
+            } else {
+                BitTable(20, 31, 0);
+            }
+            break;
+        case 2: //16
+            if(windowWidth < threshold16) {
+                BitTable(21, 15, 8);
+                BitTable(22, 7, 0);
+            } else {
+                BitTable(23, 15, 0);
+            }
+            break;
+        case 3: //8
+            BitTable(24, 7, 0);
+            break;    
+    }
+    
+    ImGui::EndChild();
+    
+    char buf[128];
+    const char* formatsSigned[] = {
+        "%lld",
+        "%d",
+        "%hd",
+        "%hhd"
+    };
+    if(ImGui::Button("Copy Hex")) {
+        int w = snprintf(buf, 128, "%llx", num64);
+        buf[w] = 0;
+        SDL_SetClipboardText(buf);
+    }
+    ImGui::SameLine();
+    if(ImGui::Button("Copy Signed")) {
+        int w = snprintf(buf, 128, formatsSigned[bitSizeActive], num64);
+        buf[w] = 0;
+        SDL_SetClipboardText(buf);
+    }
+    ImGui::SameLine();
+    if(ImGui::Button("Copy Unsigned")) {
+        int w = snprintf(buf, 128, "%llu", num64);
+        buf[w] = 0;
+        SDL_SetClipboardText(buf);
+    }
+}
