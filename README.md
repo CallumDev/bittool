@@ -2,4 +2,4 @@
 
 A small tool built in imgui to help with bit manipulation.
 
-![screenshot](https://user-images.githubusercontent.com/10167247/155099639-0478ac3c-58c2-4edd-a608-b107bddf66bc.png)
+![Screenshot from 2022-02-23 04-02-27](https://user-images.githubusercontent.com/10167247/155186694-9994c3ac-2c61-4a61-85e6-94aaa00630b2.png)
