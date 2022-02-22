@@ -1,10 +1,17 @@
+#if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
+#define _CRT_SECURE_NO_WARNINGS
+#define strcasecmp _stricmp
+#endif
+
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 #include <stdio.h>
 #include <SDL.h>
 #include <stdint.h>
+#include <string.h>
 #include "imgui_impl_opengl3_loader.h"
+#include "ini.h"
 #include "cousine.cpp"
 
 void IntegerTab();
@@ -22,6 +29,74 @@ union f2i {
 
 d2l doubleedit;
 f2i floatedit;
+
+static int fontSize = 0;
+static int colors = 0;
+
+char *ini_read_sdl(char *str, int num, void* stream)
+{
+    SDL_RWops* file = (SDL_RWops*)stream;
+    char *s = str;
+    num--;
+    int first = 0;
+    while(num && SDL_RWread(file, s, 1, 1)) {
+        first = 1;
+        num--;
+        if(*s != '\n') s++;
+        else break;
+    }
+    *s = '\0';
+    if(!first) 
+        return NULL;
+    return str;
+}
+
+static inline int clamped_value(const char *str, int min, int max)
+{
+    int v = atoi(str);
+    if(v < min) return min;
+    if(v > max) return max;
+    return v;
+}
+
+int ini_value_read(void* user, const char* section, const char* name, const char* value)
+{
+    if(strcasecmp(section, "config") != 0) return 1; //ignore
+    if(!strcasecmp(name, "font_size")) {
+        fontSize = clamped_value(value, 0, 3);
+        return 1;
+    }
+    if(!strcasecmp(name, "colors")) {
+        colors = clamped_value(value, 0, 2);
+        return 1;
+    }
+    return 1;
+}
+
+bool ReadConfig(const char *path)
+{
+    SDL_RWops* file = SDL_RWFromFile(path, "r");
+    if(!file) return false;
+    int retval = ini_parse_stream(ini_read_sdl, (void*)file, ini_value_read, NULL);
+    SDL_RWclose(file);
+    return retval == 0;
+}
+
+bool WriteConfig(const char *path)
+{
+    SDL_RWops* file = SDL_RWFromFile(path, "w");
+    if(!file) return false;
+    char buf[1024];
+    #define RWprintf(file, fmt, ...) { \
+    int _w = snprintf(buf, 1024, (fmt), ##__VA_ARGS__); \
+    SDL_RWwrite((file), buf, _w, 1);\
+    }
+    RWprintf(file, "[config]\n");
+    RWprintf(file, "font_size = %d\n", fontSize);
+    RWprintf(file, "colors = %d\n", colors);
+    SDL_RWclose(file);
+    return true;
+}
 
 // Main code
 int main(int, char**)
@@ -62,9 +137,29 @@ int main(int, char**)
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
+    const char *prefPath = SDL_GetPrefPath("cmcging", "bittool");
+    char confPath[1024];
+    if(prefPath) {
+        int w = snprintf(confPath, 1024, "%s%s", prefPath, "bittool.conf");
+        confPath[w] = 0;
+        if(w > 1023) {
+            prefPath = NULL;
+            fprintf(stderr, "conf path is too long - can't read/write config\n");
+        } else {
+            if(!ReadConfig(confPath)) {
+                if(!WriteConfig(confPath)) {
+                    fprintf(stderr, "Could not write config to: %s\n", confPath);
+                }
+            }
+        }
+    } else {
+        fprintf(stderr, "SDL_GetPrefPath failed - can't read/write config\n");
+    }
+
     // Setup Dear ImGui style
-    ImGui::StyleColorsDark();
-    //ImGui::StyleColorsClassic();
+    if(colors == 1) ImGui::StyleColorsDark();
+    else if (colors == 2) ImGui::StyleColorsClassic();
+    else ImGui::StyleColorsLight();
 
     // Setup Platform/Renderer backends
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
@@ -107,8 +202,7 @@ int main(int, char**)
     // Main loop
     bool done = false;
 
-    int fontSize = 0;
-
+    
     int renderCount = 5;
     while (!done)
     {
@@ -161,6 +255,21 @@ int main(int, char**)
                     if(ImGui::MenuItem("X-Large", NULL, fontSize == 3)) fontSize = 3;
                     ImGui::EndMenu();
                 }
+                if(ImGui::BeginMenu("Theme")) {
+                    if(ImGui::MenuItem("Light", NULL, colors == 0)) {
+                        colors = 0;
+                        ImGui::StyleColorsLight();
+                    }
+                    if(ImGui::MenuItem("Dark", NULL, colors == 1)) {
+                        colors = 1;
+                        ImGui::StyleColorsDark();
+                    }
+                    if(ImGui::MenuItem("Classic", NULL, colors == 2)) {
+                        colors = 2;
+                        ImGui::StyleColorsClassic();
+                    }
+                    ImGui::EndMenu();
+                }
                 ImGui::EndMenuBar();
             }
             ImGui::BeginTabBar("##tabs");
@@ -187,6 +296,10 @@ int main(int, char**)
         SDL_GL_SwapWindow(window);
     }
 
+    if(!WriteConfig(confPath)) {
+        fprintf(stderr, "Could not write config to: %s\n", confPath);
+    }
+
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
@@ -195,6 +308,7 @@ int main(int, char**)
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
+
 
     return 0;
 }
@@ -219,9 +333,10 @@ static int bitCount = 64;
 void BitTable(int tableIndex, int startBit, int endBit)
 {
     ImGui::PushID(tableIndex);
+
     #define SET_COLOR(index) { \
         int colorIndex = (index / 4) % 2; \
-        int c = colorIndex ? 0xFF3D3D3D : 0xFF616161; \
+        ImU32 c = ImGui::GetColorU32(colorIndex ? ImGuiCol_TableRowBg : ImGuiCol_TableRowBgAlt); \
         ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, c, ImGui::TableGetColumnIndex()); \
     }
     

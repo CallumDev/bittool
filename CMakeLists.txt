@@ -6,6 +6,7 @@ project(bittool)
 
 add_executable(bittool
     main.cpp
+    ini.c
     imgui/imgui.cpp
     imgui/imgui_demo.cpp
     imgui/imgui_draw.cpp
