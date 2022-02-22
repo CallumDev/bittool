@@ -15,7 +15,13 @@ add_executable(bittool
     imgui/backends/imgui_impl_sdl.cpp
     imgui/backends/imgui_impl_opengl3.cpp
 )
-    
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    install(TARGETS bittool DESTINATION bin)
+    install(FILES unix/bittool.desktop DESTINATION share/applications)
+    install(FILES unix/bittool.svg DESTINATION share/icons/hicolor/scalable/apps)
+endif()
+
 find_package(Freetype)
 
 if(Freetype_FOUND)

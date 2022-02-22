@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Exec=bittool
+Icon=bittool
+Terminal=false
+Name=BitTool
+Comment=Tool for manipulating bitfields
+Categories=Development;
