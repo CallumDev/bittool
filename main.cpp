@@ -32,6 +32,9 @@ f2i floatedit;
 
 static int fontSize = 0;
 static int colors = 0;
+static int set_windowWidth = 930;
+static int set_windowHeight = 340;
+static int set_maximized = 0;
 
 char *ini_read_sdl(char *str, int num, void* stream)
 {
@@ -70,6 +73,18 @@ int ini_value_read(void* user, const char* section, const char* name, const char
         colors = clamped_value(value, 0, 2);
         return 1;
     }
+    if(!strcasecmp(name, "width")) {
+        set_windowWidth = clamped_value(value, 100, 16384);
+        return 1;
+    }
+    if(!strcasecmp(name, "height")) {
+        set_windowHeight = clamped_value(value, 100, 16384);
+        return 1;
+    }
+    if(!strcasecmp(name, "maximized")) {
+        set_maximized = clamped_value(value, 0, 1);
+        return 1;
+    }
     return 1;
 }
 
@@ -94,6 +109,9 @@ bool WriteConfig(const char *path)
     RWprintf(file, "[config]\n");
     RWprintf(file, "font_size = %d\n", fontSize);
     RWprintf(file, "colors = %d\n", colors);
+    RWprintf(file, "width = %d\n", set_windowWidth);
+    RWprintf(file, "height = %d\n", set_windowHeight);
+    RWprintf(file, "maximized = %d\n", set_maximized);
     SDL_RWclose(file);
     return true;
 }
@@ -113,32 +131,7 @@ int main(int, char**)
         printf("Error: %s\n", SDL_GetError());
         return -1;
     }
-
-    // GL 3.0 + GLSL 130
-    const char* glsl_version = "#version 130";
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-
-    // Create window with graphics context
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-    SDL_Window* window = SDL_CreateWindow("BitTool", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
-    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-    SDL_GL_MakeCurrent(window, gl_context);
-    SDL_GL_SetSwapInterval(1); // Enable vsync
-
-    // Setup Dear ImGui context
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.IniFilename = NULL;
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
+    //Configuration
     const char *prefPath = SDL_GetPrefPath("cmcging", "bittool");
     char confPath[1024];
     if(prefPath) {
@@ -157,6 +150,36 @@ int main(int, char**)
     } else {
         fprintf(stderr, "SDL_GetPrefPath failed - can't read/write config\n");
     }
+    // GL 3.0 + GLSL 130
+    const char* glsl_version = "#version 130";
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+
+    // Create window with graphics context
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+    SDL_Window* window = SDL_CreateWindow("BitTool", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, set_windowWidth, set_windowHeight, window_flags);
+    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    SDL_GL_MakeCurrent(window, gl_context);
+    SDL_GL_SetSwapInterval(1); // Enable vsync
+    //
+    SDL_SetWindowMinimumSize(window, 100, 100);
+    if(set_maximized) {
+        SDL_MaximizeWindow(window);
+    }
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.IniFilename = NULL;
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    
 
     // Setup Dear ImGui style
     if(colors == 1) ImGui::StyleColorsDark();
@@ -226,8 +249,21 @@ int main(int, char**)
             ImGui_ImplSDL2_ProcessEvent(&event);
             if (event.type == SDL_QUIT)
                 done = true;
-            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
-                done = true;
+            if (event.type == SDL_WINDOWEVENT && event.window.windowID == SDL_GetWindowID(window)) {
+                switch(event.window.event) {
+                    case SDL_WINDOWEVENT_CLOSE:
+                        done = true;
+                        break;
+                    case SDL_WINDOWEVENT_MAXIMIZED:
+                        set_maximized = 1;
+                        break;
+                    case SDL_WINDOWEVENT_RESTORED:
+                        set_maximized = 0;
+                        break;
+                }
+            }
+                
+            
         }
 
         // Start the Dear ImGui frame
@@ -242,7 +278,8 @@ int main(int, char**)
             int windowWidth = 0;
             int windowHeight = 0;
             SDL_GL_GetDrawableSize(window, &windowWidth, &windowHeight);
-
+            //this can be different from GetDrawableSize when we enable high DPI
+            SDL_GetWindowSize(window, &set_windowWidth, &set_windowHeight);
             ImGui::SetNextWindowSize(ImVec2(windowWidth, windowHeight), ImGuiCond_Always);
             ImGui::SetNextWindowPos(ImVec2(0,0), ImGuiCond_Always);
             ImGui::Begin("##mainWindow", NULL, 
