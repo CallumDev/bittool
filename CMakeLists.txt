@@ -1,11 +1,23 @@
 cmake_minimum_required (VERSION 3.1)
 project(bittool)
 
+set(OUTPUT_NAME "${CMAKE_BINARY_DIR}/generated/lang.h")
+set(INPUT_NAME "${CMAKE_CURRENT_SOURCE_DIR}/lang.csv")
 
+add_custom_command(
+  OUTPUT "${OUTPUT_NAME}"
+  DEPENDS "${INPUT_NAME}"
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/gen_lang.py"
+  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/gen_lang.py" "${INPUT_NAME}" "${OUTPUT_NAME}"
+)
 
+set_source_files_properties(${OUTPUT_NAME} PROPERTIES
+  GENERATED TRUE)
+add_custom_target(bittool_lang DEPENDS "${OUTPUT_NAME}")
 
 add_executable(bittool
     main.cpp
+    DroidSansFallback.cpp
     ini.c
     imgui/imgui.cpp
     imgui/imgui_demo.cpp
@@ -15,6 +27,8 @@ add_executable(bittool
     imgui/backends/imgui_impl_sdl.cpp
     imgui/backends/imgui_impl_opengl3.cpp
 )
+
+add_dependencies(bittool bittool_lang)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     install(TARGETS bittool DESTINATION bin)
@@ -34,7 +48,7 @@ else()
     message(STATUS "bittool: compiling using stb_truetype rasterizer")
 endif()
 
-target_include_directories(bittool PRIVATE "imgui" "imgui/backends" "imgui/misc/freetype")
+target_include_directories(bittool PRIVATE "imgui" "imgui/backends" "imgui/misc/freetype" "${CMAKE_BINARY_DIR}/generated")
 
 # SDL2 Dependency
 if (DEFINED SDL2_INCLUDE_DIRS AND DEFINED SDL2_LIBRARIES)

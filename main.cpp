@@ -13,6 +13,8 @@
 #include "imgui_impl_opengl3_loader.h"
 #include "ini.h"
 #include "cousine.cpp"
+#include "DroidSansFallback.h"
+#include "lang.h"
 
 void IntegerTab();
 void FloatTab();
@@ -35,6 +37,7 @@ static int colors = 0;
 static int set_windowWidth = 930;
 static int set_windowHeight = 340;
 static int set_maximized = 0;
+static int language_index = 0;
 
 char *ini_read_sdl(char *str, int num, void* stream)
 {
@@ -115,6 +118,8 @@ bool WriteConfig(const char *path)
     SDL_RWclose(file);
     return true;
 }
+
+static ImFont** fonts_mono;
 
 // Main code
 int main(int, char**)
@@ -209,11 +214,24 @@ int main(int, char**)
     ImFont* fontLarge = io.Fonts->AddFontFromMemoryCompressedTTF(Cousine_compressed_data, Cousine_compressed_size, 25.0);
     ImFont* fontXL = io.Fonts->AddFontFromMemoryCompressedTTF(Cousine_compressed_data, Cousine_compressed_size, 30.0);
 
-    ImFont* fonts[] = {
+  
+    ImFont* droidSmall = io.Fonts->AddFontFromMemoryCompressedBase85TTF(DroidSans_compressed_data_base85, 15.0, NULL, lang_ranges);
+    ImFont* droidMedium = io.Fonts->AddFontFromMemoryCompressedBase85TTF(DroidSans_compressed_data_base85, 20.0, NULL, lang_ranges);
+    ImFont* droidLarge = io.Fonts->AddFontFromMemoryCompressedBase85TTF(DroidSans_compressed_data_base85, 25.0, NULL, lang_ranges);
+    ImFont* droidXL = io.Fonts->AddFontFromMemoryCompressedBase85TTF(DroidSans_compressed_data_base85, 30.0, NULL, lang_ranges);
+    IM_ASSERT(droidSmall != NULL);
+    ImFont* _fonts_mono[] = {
         fontSmall,
         fontMedium,
         fontLarge,
         fontXL
+    };
+    fonts_mono = _fonts_mono;
+    ImFont* fonts_sans[] = {
+        droidSmall,
+        droidMedium,
+        droidLarge,
+        droidXL
     };
     const char *fontLabels[] = {
         "Font Size: Small",
@@ -271,7 +289,7 @@ int main(int, char**)
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::PushFont(fonts[fontSize]);
+        ImGui::PushFont(fonts_sans[fontSize]);
         //
         {
 
@@ -287,36 +305,45 @@ int main(int, char**)
             ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_MenuBar);                         
             if(ImGui::BeginMenuBar()) {
-                if(ImGui::BeginMenu(fontLabels[fontSize])) {
-                    if(ImGui::MenuItem("Small", NULL, fontSize == 0)) fontSize = 0;
-                    if(ImGui::MenuItem("Medium", NULL, fontSize == 1)) fontSize = 1;
-                    if(ImGui::MenuItem("Large", NULL, fontSize == 2)) fontSize = 2;
-                    if(ImGui::MenuItem("X-Large", NULL, fontSize == 3)) fontSize = 3;
+                if(ImGui::BeginMenu(STR_FONT_SIZE)) {
+                    if(ImGui::MenuItem(STR_SZ_SMALL, NULL, fontSize == 0)) fontSize = 0;
+                    if(ImGui::MenuItem(STR_SZ_MEDIUM, NULL, fontSize == 1)) fontSize = 1;
+                    if(ImGui::MenuItem(STR_SZ_LARGE, NULL, fontSize == 2)) fontSize = 2;
+                    if(ImGui::MenuItem(STR_SZ_XLARGE, NULL, fontSize == 3)) fontSize = 3;
                     ImGui::EndMenu();
                 }
-                if(ImGui::BeginMenu("Theme")) {
-                    if(ImGui::MenuItem("Light", NULL, colors == 0)) {
+                if(ImGui::BeginMenu(STR_THEME)) {
+                    if(ImGui::MenuItem(STR_THEME_LIGHT, NULL, colors == 0)) {
                         colors = 0;
                         ImGui::StyleColorsLight();
                     }
-                    if(ImGui::MenuItem("Dark", NULL, colors == 1)) {
+                    if(ImGui::MenuItem(STR_THEME_DARK, NULL, colors == 1)) {
                         colors = 1;
                         ImGui::StyleColorsDark();
                     }
-                    if(ImGui::MenuItem("Classic", NULL, colors == 2)) {
+                    if(ImGui::MenuItem(STR_THEME_CLASSIC, NULL, colors == 2)) {
                         colors = 2;
                         ImGui::StyleColorsClassic();
+                    }
+                    ImGui::EndMenu();
+                }
+                if(ImGui::BeginMenu(STR_LANGUAGE)) {
+                    for(int i = 0; i < LANGUAGE_COUNT; i++) {
+                        if(ImGui::MenuItem(language_names[i], NULL, language_index == i)) {
+                            language_index = i;
+                            current_language = languages[i];
+                        }
                     }
                     ImGui::EndMenu();
                 }
                 ImGui::EndMenuBar();
             }
             ImGui::BeginTabBar("##tabs");
-            if(ImGui::BeginTabItem("Integer")) {
+            if(ImGui::BeginTabItem(STR_INTEGER)) {
                 IntegerTab();
                 ImGui::EndTabItem();
             }
-            if(ImGui::BeginTabItem("Float")) {
+            if(ImGui::BeginTabItem(STR_FLOAT)) {
                 FloatTab();
                 ImGui::EndTabItem();
             }
@@ -355,13 +382,17 @@ int main(int, char**)
 
 void FloatTab()
 {
-    ImGui::Text("Double Precision");
+    ImGui::Text(STR_DOUBLE_PRECISION);
+    ImGui::PushFont(fonts_mono[fontSize]);
     ImGui::InputScalar("uint64_t", ImGuiDataType_U64, &doubleedit.l, NULL, NULL, "%lX", ImGuiInputTextFlags_CharsHexadecimal);
     ImGui::InputScalar("double", ImGuiDataType_Double, &doubleedit.d, NULL, NULL);
+    ImGui::PopFont();
     ImGui::Separator();
-    ImGui::Text("Single Precision");
+    ImGui::Text(STR_SINGLE_PRECISION);
+    ImGui::PushFont(fonts_mono[fontSize]);
     ImGui::InputScalar("uint32_t", ImGuiDataType_U32, &floatedit.i, NULL, NULL, "%x", ImGuiInputTextFlags_CharsHexadecimal);
     ImGui::InputScalar("float", ImGuiDataType_Float, &floatedit.f, NULL, NULL);
+    ImGui::PopFont();
 }
 
 static uint64_t num64 = 0x0;
@@ -371,6 +402,7 @@ static int bitCount = 64;
 
 void BitTable(int tableIndex, int startBit, int endBit)
 {
+    ImGui::PushFont(fonts_mono[fontSize]);
     ImGui::PushID(tableIndex);
 
     #define SET_COLOR(index) { \
@@ -412,6 +444,7 @@ void BitTable(int tableIndex, int startBit, int endBit)
         ImGui::EndTable();
     }
     ImGui::PopID();
+    ImGui::PopFont();
 }
 
 void IntegerTab()
@@ -447,32 +480,45 @@ void IntegerTab()
         "%04X",
         "%02X"
     };
-    ImGui::InputScalar("Number", ImGuiDataType_U64, &num64, NULL, NULL, formats[bitSizeActive], ImGuiInputTextFlags_CharsHexadecimal);
-
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text(STR_HEX);
+    ImGui::SameLine();
+    ImGui::PushFont(fonts_mono[fontSize]);
+    ImGui::InputScalar("##hex", ImGuiDataType_U64, &num64, NULL, NULL, formats[bitSizeActive], ImGuiInputTextFlags_CharsHexadecimal);
+    ImGui::PopFont();
     float threshold32 = ImGui::CalcTextSize("00").x * 44;
     float threshold16 = ImGui::CalcTextSize("00").x * 22;
     float windowWidth = ImGui::GetWindowWidth();
     float lineHeight = ImGui::GetTextLineHeightWithSpacing();
+
+    #define NUM_DISPLAY(txt,fmt) { \
+        ImGui::Text("%s: ", txt); \
+        ImGui::SameLine(); \
+        ImGui::PushFont(fonts_mono[fontSize]); \
+        ImGui::Text(fmt, num64); \
+        ImGui::PopFont(); \
+    }
+
     switch(bitSizeActive) {
         default:
         case 0:
-            ImGui::Text("Decimal: %llu", num64);
-            ImGui::Text("Signed: %lld", (int64_t)num64);
+            NUM_DISPLAY(STR_UNSIGNED, "%llu");
+            NUM_DISPLAY(STR_SIGNED, "%lld")
         break;
         case 1:
             num64 &= 0xFFFFFFFF;
-            ImGui::Text("Decimal: %u", (uint32_t)num64);
-            ImGui::Text("Signed: %d", (int32_t)num64);
+            NUM_DISPLAY(STR_UNSIGNED, "%u");
+            NUM_DISPLAY(STR_SIGNED, "%d")
             break;
         case 2:
             num64 &= 0xFFFF;
-            ImGui::Text("Decimal: %hu", (uint16_t)num64);
-            ImGui::Text("Signed: %hd", (int16_t)num64);
+            NUM_DISPLAY(STR_UNSIGNED, "%hu");
+            NUM_DISPLAY(STR_SIGNED, "%hd");
             break;
         case 3:
             num64 &= 0xFF;
-            ImGui::Text("Decimal: %hhu", (uint8_t)num64);
-            ImGui::Text("Signed: %hhd", (int8_t)num64);
+            NUM_DISPLAY(STR_UNSIGNED, "%hhu");
+            NUM_DISPLAY(STR_SIGNED, "%hhd");
             break;
     }
 
@@ -536,19 +582,19 @@ void IntegerTab()
         "%hd",
         "%hhd"
     };
-    if(ImGui::Button("Copy Hex")) {
+    if(ImGui::Button(STR_COPY_HEX)) {
         int w = snprintf(buf, 128, "%llx", num64);
         buf[w] = 0;
         SDL_SetClipboardText(buf);
     }
     ImGui::SameLine();
-    if(ImGui::Button("Copy Signed")) {
+    if(ImGui::Button(STR_COPY_SIGNED)) {
         int w = snprintf(buf, 128, formatsSigned[bitSizeActive], num64);
         buf[w] = 0;
         SDL_SetClipboardText(buf);
     }
     ImGui::SameLine();
-    if(ImGui::Button("Copy Unsigned")) {
+    if(ImGui::Button(STR_COPY_UNSIGNED)) {
         int w = snprintf(buf, 128, "%llu", num64);
         buf[w] = 0;
         SDL_SetClipboardText(buf);
