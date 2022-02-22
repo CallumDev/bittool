@@ -1,8 +1,3 @@
-// Dear ImGui: standalone example application for SDL2 + OpenGL
-// (SDL is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan/Metal graphics context creation, etc.)
-// If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
-// Read online: https://github.com/ocornut/imgui/tree/master/docs
-
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
@@ -100,16 +95,25 @@ int main(int, char**)
     int bitSizeActive = 0;
     int bitCount = 64;
     int fontSize = 0;
+
+    int renderCount = 5;
     while (!done)
     {
+        
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
         // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
         SDL_Event event;
+        if(renderCount <= 0) {
+            SDL_WaitEvent(NULL);
+        } else {
+            renderCount--; 
+        }
         while (SDL_PollEvent(&event))
         {
+            renderCount = 5;
             ImGui_ImplSDL2_ProcessEvent(&event);
             if (event.type == SDL_QUIT)
                 done = true;
@@ -137,7 +141,7 @@ int main(int, char**)
             ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_MenuBar);                         
             if(ImGui::BeginMenuBar()) {
-                    if(ImGui::BeginMenu(fontLabels[fontSize])) {
+                if(ImGui::BeginMenu(fontLabels[fontSize])) {
                     if(ImGui::MenuItem("Small", NULL, fontSize == 0)) fontSize = 0;
                     if(ImGui::MenuItem("Medium", NULL, fontSize == 1)) fontSize = 1;
                     if(ImGui::MenuItem("Large", NULL, fontSize == 2)) fontSize = 2;
