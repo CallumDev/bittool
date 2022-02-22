@@ -88,6 +88,10 @@ int ini_value_read(void* user, const char* section, const char* name, const char
         set_maximized = clamped_value(value, 0, 1);
         return 1;
     }
+    if(!strcasecmp(name, "language")) {
+        language_index = clamped_value(value, 0, LANGUAGE_COUNT - 1);
+        return 1;
+    }
     return 1;
 }
 
@@ -115,6 +119,7 @@ bool WriteConfig(const char *path)
     RWprintf(file, "width = %d\n", set_windowWidth);
     RWprintf(file, "height = %d\n", set_windowHeight);
     RWprintf(file, "maximized = %d\n", set_maximized);
+    RWprintf(file, "language = %d\n", language_index);
     SDL_RWclose(file);
     return true;
 }
@@ -155,6 +160,7 @@ int main(int, char**)
     } else {
         fprintf(stderr, "SDL_GetPrefPath failed - can't read/write config\n");
     }
+    current_language = languages[language_index];
     // GL 3.0 + GLSL 130
     const char* glsl_version = "#version 130";
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
@@ -181,8 +187,6 @@ int main(int, char**)
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.IniFilename = NULL;
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     
 
@@ -190,6 +194,9 @@ int main(int, char**)
     if(colors == 1) ImGui::StyleColorsDark();
     else if (colors == 2) ImGui::StyleColorsClassic();
     else ImGui::StyleColorsLight();
+
+    ImGui::GetStyle().FrameRounding = 2;
+    ImGui::GetStyle().FrameBorderSize = 1;
 
     // Setup Platform/Renderer backends
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
@@ -423,10 +430,12 @@ void BitTable(int tableIndex, int startBit, int endBit)
             ImGui::PushID(i);
             bool displayVal = ((num64 & (1ULL << i)) != 0);
             bool isSet = displayVal;
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1,1));
             if(ImGui::Checkbox("##box", &displayVal)) {
                 if(isSet) num64 &= ~(1ULL << i);
                 else num64 |= (1ULL << i);
             }
+            ImGui::PopStyleVar();
             ImGui::PopID();
         }
         for(int i = startBit; i >= endBit; i--) {
@@ -485,9 +494,10 @@ void IntegerTab()
     ImGui::SameLine();
     ImGui::PushFont(fonts_mono[fontSize]);
     ImGui::InputScalar("##hex", ImGuiDataType_U64, &num64, NULL, NULL, formats[bitSizeActive], ImGuiInputTextFlags_CharsHexadecimal);
+    float threshold32 = ImGui::CalcTextSize("00").x * 40;
+    float threshold16 = ImGui::CalcTextSize("00").x * 20;
     ImGui::PopFont();
-    float threshold32 = ImGui::CalcTextSize("00").x * 44;
-    float threshold16 = ImGui::CalcTextSize("00").x * 22;
+
     float windowWidth = ImGui::GetWindowWidth();
     float lineHeight = ImGui::GetTextLineHeightWithSpacing();
 
