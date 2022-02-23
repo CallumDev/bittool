@@ -4,11 +4,13 @@ project(bittool)
 set(OUTPUT_NAME "${CMAKE_BINARY_DIR}/generated/lang.h")
 set(INPUT_NAME "${CMAKE_CURRENT_SOURCE_DIR}/lang.csv")
 
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
 add_custom_command(
   OUTPUT "${OUTPUT_NAME}"
   DEPENDS "${INPUT_NAME}"
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/gen_lang.py"
-  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/gen_lang.py" "${INPUT_NAME}" "${OUTPUT_NAME}"
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/gen_lang.py" "${INPUT_NAME}" "${OUTPUT_NAME}"
 )
 
 set_source_files_properties(${OUTPUT_NAME} PROPERTIES
