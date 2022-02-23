@@ -89,7 +89,12 @@ int ini_value_read(void* user, const char* section, const char* name, const char
         return 1;
     }
     if(!strcasecmp(name, "language")) {
-        language_index = clamped_value(value, 0, LANGUAGE_COUNT - 1);
+        for(int i = 0; i < LANGUAGE_COUNT; i++) {
+            if(!strcasecmp(value, language_codes[i])) {
+                language_index = i;
+                break;
+            }
+        }
         return 1;
     }
     return 1;
@@ -119,7 +124,7 @@ bool WriteConfig(const char *path)
     RWprintf(file, "width = %d\n", set_windowWidth);
     RWprintf(file, "height = %d\n", set_windowHeight);
     RWprintf(file, "maximized = %d\n", set_maximized);
-    RWprintf(file, "language = %d\n", language_index);
+    RWprintf(file, "language = %s\n", language_codes[language_index]);
     SDL_RWclose(file);
     return true;
 }

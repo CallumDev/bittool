@@ -48,6 +48,10 @@ def main(argv):
         for lang in language_names:
             csource.write("    \"%s\",\n" % cencode(lang))
         csource.write("};\n")
+        csource.write("static const char* language_codes[] = {\n")
+        for lang in languages:
+            csource.write("    \"%s\",\n" % cencode(lang["id"]))
+        csource.write("};\n")
         for lang in languages:
             csource.write("static const char* language_%s[] = {\n" % lang["id"])
             for translated in lang["strings"]:
