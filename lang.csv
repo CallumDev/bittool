@@ -1,21 +1,21 @@
-"ID","English|EN","简体中文|ZHCN"
-"FONT_SIZE","Font Size","字体大小"
-"SZ_SMALL","Small","小"
-"SZ_MEDIUM","Medium","中"
-"SZ_LARGE","Large","大"
-"SZ_XLARGE","X-Large","巨大"
-"INTEGER","Integer","整形"
-"FLOAT","Float","浮点型"
-"SINGLE_PRECISION","Single Precision","单精度浮点型 "
-"DOUBLE_PRECISION","Double Precision","双精度浮点型"
-"SIGNED","Signed","符号整数"
-"UNSIGNED","Unsigned","无符号整数"
-"HEX","Hex","十六进制"
-"COPY_HEX","Copy Hex","复制十六进制"
-"COPY_SIGNED","Copy Signed","复制符号整数"
-"COPY_UNSIGNED","Copy Unsigned","复制无符号整数"
-"LANGUAGE","Language","语言"
-"THEME_LIGHT","Light","明亮"
-"THEME_DARK","Dark","黑暗"
-"THEME_CLASSIC","Classic","紫色"
-"THEME","Theme","主题"
+ID,English|EN,简体中文|ZHCN,繁體中文|ZHTW
+FONT_SIZE,Font Size,字体大小,字體大小
+SZ_SMALL,Small,小,小
+SZ_MEDIUM,Medium,中,中
+SZ_LARGE,Large,大,大
+SZ_XLARGE,X-Large,巨大,巨大
+INTEGER,Integer,整形,整形
+FLOAT,Float,浮点型,浮點型
+SINGLE_PRECISION,Single Precision,单精度浮点型 ,單精度浮點型
+DOUBLE_PRECISION,Double Precision,双精度浮点型,雙精度浮點型
+SIGNED,Signed,符号整数,符號整數
+UNSIGNED,Unsigned,无符号整数,無符號整數
+HEX,Hex,十六进制,十六進制
+COPY_HEX,Copy Hex,复制十六进制,複製十六進制
+COPY_SIGNED,Copy Signed,复制符号整数,複製符號整數
+COPY_UNSIGNED,Copy Unsigned,复制无符号整数,複製無符號整數
+LANGUAGE,Language,语言,語言
+THEME_LIGHT,Light,明亮,明亮
+THEME_DARK,Dark,黑暗,黑暗
+THEME_CLASSIC,Classic,紫色,紫色
+THEME,Theme,主题,主題
