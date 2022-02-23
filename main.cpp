@@ -221,11 +221,14 @@ int main(int, char**)
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != NULL);
-    ImFont* fontSmall = io.Fonts->AddFontFromMemoryCompressedTTF(Cousine_compressed_data, Cousine_compressed_size, 15.0);
-    ImFont* fontMedium = io.Fonts->AddFontFromMemoryCompressedTTF(Cousine_compressed_data, Cousine_compressed_size, 20.0);
-    ImFont* fontLarge = io.Fonts->AddFontFromMemoryCompressedTTF(Cousine_compressed_data, Cousine_compressed_size, 25.0);
-    ImFont* fontXL = io.Fonts->AddFontFromMemoryCompressedTTF(Cousine_compressed_data, Cousine_compressed_size, 30.0);
 
+    io.Fonts->Flags |= ImFontAtlasFlags_NoMouseCursors; //save a little texture memory
+    static const ImWchar range_ASCII[] = { 0x20, 0x7F, 0 };  //don't need non-ASCII chars in monospace
+
+    ImFont* fontSmall = io.Fonts->AddFontFromMemoryCompressedTTF(Cousine_compressed_data, Cousine_compressed_size, 15.0, NULL, range_ASCII);
+    ImFont* fontMedium = io.Fonts->AddFontFromMemoryCompressedTTF(Cousine_compressed_data, Cousine_compressed_size, 20.0, NULL, range_ASCII);
+    ImFont* fontLarge = io.Fonts->AddFontFromMemoryCompressedTTF(Cousine_compressed_data, Cousine_compressed_size, 25.0, NULL, range_ASCII);
+    ImFont* fontXL = io.Fonts->AddFontFromMemoryCompressedTTF(Cousine_compressed_data, Cousine_compressed_size, 30.0, NULL, range_ASCII);
   
     ImFont* droidSmall = io.Fonts->AddFontFromMemoryCompressedBase85TTF(DroidSans_compressed_data_base85, 15.0, NULL, lang_ranges);
     ImFont* droidMedium = io.Fonts->AddFontFromMemoryCompressedBase85TTF(DroidSans_compressed_data_base85, 20.0, NULL, lang_ranges);
