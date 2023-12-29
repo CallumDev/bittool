@@ -516,27 +516,64 @@ void IntegerTab()
         ImGui::Text(fmt, num64); \
         ImGui::PopFont(); \
     }
-
+    
+    #define CALC_DISPLAY(txt, fmt, num) { \
+        ImGui::Text("%s: ", txt); \
+        ImGui::SameLine(); \
+        ImGui::PushFont(fonts_mono[fontSize]); \
+        if ((num) < 0) ImGui::Text("?"); \
+        else ImGui::Text(fmt, (num)); \
+        ImGui::PopFont(); \
+    }
+    
+    #define POPCOUNT(x) __builtin_popcount((x))
+    #define LZCNT64(x) (x == 0 ? -1 : __builtin_clzll((x)))
+    #define LZCNT32(x) (x == 0 ? -1 : __builtin_clz((unsigned int)(x)))
+    #define LZCNT16(x) (x == 0 ? -1 : __builtin_clz((uint16_t)(x)) - 16)
+    #define LZCNT8(x) (x == 0 ? -1 : __builtin_clz((uint8_t)(x)) - 24)
+    #define TZCNT64(x) (x == 0 ? -1 : __builtin_ctzll((x)))
+    #define TZCNT32(x) (x == 0 ? -1 : __builtin_ctz((unsigned int)(x)))
+    
     switch(bitSizeActive) {
         default:
         case 0:
             NUM_DISPLAY(STR_UNSIGNED, "%llu");
-            NUM_DISPLAY(STR_SIGNED, "%lld")
+            NUM_DISPLAY(STR_SIGNED, "%lld");
+            CALC_DISPLAY("popcnt", "%d", POPCOUNT(num64));
+            ImGui::SameLine();
+            CALC_DISPLAY("lzcnt", "%d", LZCNT64(num64));
+            ImGui::SameLine();
+            CALC_DISPLAY("tzcnt", "%d", TZCNT64(num64));
         break;
         case 1:
             num64 &= 0xFFFFFFFF;
             NUM_DISPLAY(STR_UNSIGNED, "%u");
-            NUM_DISPLAY(STR_SIGNED, "%d")
+            NUM_DISPLAY(STR_SIGNED, "%d");
+            CALC_DISPLAY("popcnt", "%d", POPCOUNT(num64));
+            ImGui::SameLine();
+            CALC_DISPLAY("lzcnt", "%d", LZCNT32(num64));
+            ImGui::SameLine();
+            CALC_DISPLAY("tzcnt", "%d", TZCNT32(num64));
             break;
         case 2:
             num64 &= 0xFFFF;
             NUM_DISPLAY(STR_UNSIGNED, "%hu");
             NUM_DISPLAY(STR_SIGNED, "%hd");
+            CALC_DISPLAY("popcnt", "%d", POPCOUNT(num64));
+            ImGui::SameLine();
+            CALC_DISPLAY("lzcnt", "%d", LZCNT16(num64));
+            ImGui::SameLine();
+            CALC_DISPLAY("tzcnt", "%d", TZCNT32(num64));
             break;
         case 3:
             num64 &= 0xFF;
             NUM_DISPLAY(STR_UNSIGNED, "%hhu");
             NUM_DISPLAY(STR_SIGNED, "%hhd");
+            CALC_DISPLAY("popcnt", "%d", POPCOUNT(num64));
+            ImGui::SameLine();
+            CALC_DISPLAY("lzcnt", "%d", LZCNT8(num64));
+            ImGui::SameLine();
+            CALC_DISPLAY("tzcnt", "%d", TZCNT32(num64));
             break;
     }
 
