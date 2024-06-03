@@ -5,6 +5,7 @@ set(OUTPUT_NAME "${CMAKE_BINARY_DIR}/generated/lang.h")
 set(INPUT_NAME "${CMAKE_CURRENT_SOURCE_DIR}/lang.csv")
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/generated")
 
 add_custom_command(
   OUTPUT "${OUTPUT_NAME}"
@@ -29,6 +30,8 @@ add_executable(bittool
     imgui/backends/imgui_impl_sdl.cpp
     imgui/backends/imgui_impl_opengl3.cpp
 )
+
+set_property(TARGET bittool PROPERTY CXX_STANDARD 14)
 
 add_dependencies(bittool bittool_lang)
 
