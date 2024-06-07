@@ -18,6 +18,12 @@ set_source_files_properties(${OUTPUT_NAME} PROPERTIES
   GENERATED TRUE)
 add_custom_target(bittool_lang DEPENDS "${OUTPUT_NAME}")
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+  set(PLATFORM_FILES "win32/resources.rc")
+else()
+  set(PLATFORM_FILES "")
+endif()
+
 add_executable(bittool
     main.cpp
     DroidSansFallback.cpp
@@ -29,6 +35,7 @@ add_executable(bittool
     imgui/imgui_widgets.cpp
     imgui/backends/imgui_impl_sdl.cpp
     imgui/backends/imgui_impl_opengl3.cpp
+    ${PLATFORM_FILES}
 )
 
 set_property(TARGET bittool PROPERTY CXX_STANDARD 14)
@@ -39,6 +46,11 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     install(TARGETS bittool DESTINATION bin)
     install(FILES unix/bittool.desktop DESTINATION share/applications)
     install(FILES unix/bittool.svg DESTINATION share/icons/hicolor/scalable/apps)
+endif()
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" AND ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+    set(IS_MINGW_BUILD "Y")
+    target_link_options(bittool PUBLIC -static-libgcc -static-libstdc++ -static)
 endif()
 
 find_package(Freetype)
@@ -65,10 +77,14 @@ else()
 	find_package(SDL2 REQUIRED)
 	if (TARGET SDL2::SDL2)
 		message(STATUS "bittool: using TARGET SDL2::SDL2")
-		target_link_libraries(bittool PRIVATE SDL2::SDL2)
+		if(${IS_MINGW_BUILD} STREQUAL "Y")
+          target_link_libraries(bittool PRIVATE SDL2::SDL2main SDL2::SDL2-static)
+		else()
+          target_link_libraries(bittool PRIVATE SDL2::SDL2main SDL2::SDL2)
+        endif()
 	elseif (TARGET SDL2)
 		message(STATUS "bittool: using TARGET SDL2")
-		target_link_libraries(bittool PRIVATE SDL2)
+		target_link_libraries(bittool PRIVATE SDL2main SDL2)
 	else()
 		message(STATUS "bittool: no TARGET SDL2::SDL2, or SDL2, using variables")
 		target_include_directories(testapp PRIVATE "$<BUILD_INTERFACE:${SDL2_INCLUDE_DIRS}>")
